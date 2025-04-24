@@ -1,0 +1,129 @@
+% EL3010 2025
+% Pset 1 - random walks in 1D Dirichlet BC
+% 2025.03.09
+% Ju Song
+
+clear; clc; close all
+
+%% Config
+
+L_vec = [20, 40, 80, 160];
+N_x0_vec = [400,800,1200];
+
+N_x1 = 0; % for simplicity
+dx = 1;
+
+
+t_end = 5000; % number of time steps
+dt = 1;
+t_vec = 0:dt:t_end;
+M = length(t_vec);
+
+
+for i = 3:length(L_vec)
+    for j = 1:length(N_x0_vec)
+
+        L = L_vec(i);
+        N_x0 = N_x0_vec(j);
+        x_vec = 0:dx:L;
+
+tic
+
+%% Initialization
+x_mat = zeros(N_x0,M);
+d_avg = zeros(1,M);
+N = N_x0;
+J = zeros(1,M);
+
+%% random walk time steps
+conv_criteria =1;
+
+tolerance =0.001/(L_vec(i)/L_vec(1))^3;
+
+m = 0;
+
+% NOW: use N_vec
+
+while conv_criteria > tolerance && m < M
+    
+    m = m +1; %m = 1:M % loop over time steps
+
+    
+    % generate random walks for N_m particles
+    dx_now =  dx*(2*unidrnd(2,N,1)-3); % 1 or -1
+    if m ~=1
+    x_mat(:,m) = x_mat(:,m-1) + dx_now;
+
+    % flux at L
+    J(1,m) = sum(x_mat(:,m) >= L);
+
+    % detect particles out of domain and remove (including x =L)
+    detect = x_mat(:,m) >= L | x_mat(:,m) <= 0;
+    x_mat(detect,:) = [];
+
+    % keep number of the particles at x0
+    x_mat_add = [NaN(N_x0,m-1) zeros(N_x0,M-(m-1))];
+    x_mat = [x_mat; x_mat_add];
+    end
+
+    % calculate 
+    d_vec_now = sqrt(x_mat(:,m).^2);
+    d_avg(1,m) = mean(d_vec_now);
+    N_vec(1,m) = sum(~isnan(x_mat(:,m)));
+    
+
+    % update loop
+    N = size(x_mat(:,m),1);
+
+    % criteria
+    %(e.g., number of particles)
+    if m > 51
+    N_ma = movmean(N_vec(1,1:m),[50 0]);
+    conv_criteria = abs(N_ma(1,m) - N_ma(1,m-1))/N_ma(1,m);
+    end
+    
+    
+
+end
+
+toc
+i
+j
+m
+
+    J = movmean(J(1,1:m),50);
+    J_mat(i,j) = J(end);
+    G_mat(i,j) = N_x0_vec(j)/L_vec(i);
+
+
+
+    figure(1) % histogram at converged state
+        subplot(length(N_x0_vec),length(L_vec),i+(j-1)*length(L_vec))
+        h_now = histogram(x_mat(:,m),[x_vec, L+1]); hold on
+        plot(x_vec,h_now.Values); hold on
+
+    figure(2)
+        subplot(length(N_x0_vec),length(L_vec),i+(j-1)*length(L_vec))
+        plot(t_vec(1:m),N_vec(1:m))
+
+    % Flux
+
+%{
+figure(3)
+plot(t_vec,d_avg)
+figure(4)
+plot(t_vec,N_vec)
+figure(5)
+plot(t_vec,J)
+%}  
+    end
+end
+
+%% presentations
+
+figure(3)
+scatter(G_mat(:),J_mat(:));
+box on
+ylabel('Flux (per a step)')
+xlabel('Gradient (N over L)')
+

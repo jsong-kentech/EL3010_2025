@@ -13,7 +13,7 @@ clear; clc; close all
 dx = 1;
 dt = 1;
 
-N = 10^3; % number of random walkers
+N = 10^4; % number of random walkers
 t_end = 10000; % time period to simulate
 t_vec = 0:dt:t_end;
 M = length(t_vec);
